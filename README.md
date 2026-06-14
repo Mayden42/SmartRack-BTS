@@ -51,4 +51,8 @@ Pour une meilleure lisibilité, le projet est divisé en deux parties :
 2. Modifiez les identifiants Wi-Fi avec ceux de votre réseau (Box ou Partage 4G) :
    ```cpp
    const char* ssid = "VOTRE_WIFI";
+<<<<<<< HEAD
    const char* password = "VOTRE_MOT_DE_PASSE";
+=======
+   const char* password = "VOTRE_MOT_DE_PASSE";
+>>>>>>> a0761d9dd14695c4b1416a44f03c9b068fd4fdaf
