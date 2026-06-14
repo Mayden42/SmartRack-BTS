@@ -1,11 +1,15 @@
 <?php
 require_once 'db.php';
 
+// Indique à l'ESP32 que la réponse est au format JSON (Très important pour ton projet CIEL)
+header('Content-Type: application/json');
+
 $uid = isset($_GET['uid']) ? trim($_GET['uid']) : null;
 
 if ($uid) {
     try {
-        $stmt = $pdo->prepare("SELECT id, etat, nom_outil FROM outils WHERE uid_nfc = ?");
+        // 1. AJOUT DE LA COLONNE "emplacement" DANS LA REQUÊTE SELECT
+        $stmt = $pdo->prepare("SELECT id, etat, nom_outil, emplacement FROM outils WHERE uid_nfc = ?");
         $stmt->execute([$uid]);
         $outil = $stmt->fetch();
 
@@ -19,18 +23,34 @@ if ($uid) {
             $insert = $pdo->prepare("INSERT INTO historique (uid_nfc, action) VALUES (?, ?)");
             $insert->execute([$uid, $action_texte]);
 
-            echo "SUCCES : " . $outil['nom_outil'];
+            // 2. ENVOI DE LA RÉPONSE EN JSON (Contient l'action, le nom ET l'emplacement)
+            echo json_encode([
+                "status" => "SUCCES",
+                "action" => $action_texte,
+                "nom_outil" => $outil['nom_outil'],
+                "emplacement" => $outil['emplacement'] ? $outil['emplacement'] : "Non défini"
+            ]);
+            
         } else {
-            // --- C'EST CETTE PARTIE QUI FAIT LA MAGIE DE LA DÉTECTION ---
-            // Si le badge n'est pas dans la base de données, on le sauvegarde dans un fichier texte temporaire
+            // Badge inconnu : on sauvegarde l'UID pour la page Gestion
             file_put_contents(__DIR__ . '/dernier_scan.txt', $uid);
             error_log("Fichier écrit : " . __DIR__ . '/dernier_scan.txt' . " | UID: " . $uid);
-            echo "INCONNU : UID enregistre pour la page Gestion";
+            
+            echo json_encode([
+                "status" => "INCONNU",
+                "message" => "UID enregistre pour la page Gestion"
+            ]);
         }
     } catch (PDOException $e) {
-        echo "Erreur BDD : " . $e->getMessage();
+        echo json_encode([
+            "status" => "ERREUR",
+            "message" => "Erreur BDD : " . $e->getMessage()
+        ]);
     }
 } else {
-    echo "L'API attend le scan d'un badge...";
+    echo json_encode([
+        "status" => "ERREUR",
+        "message" => "L'API attend le scan d'un badge..."
+    ]);
 }
 ?>
